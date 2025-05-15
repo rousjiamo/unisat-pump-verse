@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { toast } from "@/hooks/use-toast";
-import { ChainType } from '@/types/network';
+import { ChainType, CHAINS_MAP } from '@/types/network';
 
 interface WalletContextType {
   address: string | null;
@@ -110,7 +110,11 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Handle chain changes
-  const handleChainChanged = (chain: { enum: ChainType; name: string; network: string }) => {
+  const handleChainChanged = (chain: {
+    enum: ChainType;
+    name: string;
+    network: string;
+  }) => {
     console.log("chain changed", chain);
     setChainType(chain.enum);
     getWalletInfo();
