@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
 import { Wallet } from "lucide-react";
 import { useState } from "react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export const ConnectWalletButton = () => {
-  const { connecting, connected, address, connectWallet, disconnectWallet } = useWallet();
+  const { connecting, connected, address, publicKey, balance, network, connectWallet, disconnectWallet } = useWallet();
   const [copied, setCopied] = useState(false);
 
   // Format address for display (e.g., 0x1234...5678)
@@ -21,6 +21,11 @@ export const ConnectWalletButton = () => {
     }
   };
 
+  // Calculate balance in BTC
+  const formatBalance = (satoshis: number): string => {
+    return (satoshis / 100000000).toFixed(8);
+  };
+
   if (connected && address) {
     return (
       <DropdownMenu>
@@ -33,9 +38,20 @@ export const ConnectWalletButton = () => {
             <span>{formattedAddress}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="bg-dark-100 border-gray-700 text-white">
+        <DropdownMenuContent className="bg-dark-100 border-gray-700 text-white w-56">
+          <DropdownMenuLabel>My Wallet</DropdownMenuLabel>
+          <DropdownMenuSeparator className="bg-gray-700" />
+          <DropdownMenuItem className="text-xs opacity-70 flex flex-col items-start">
+            <span>Balance:</span>
+            <span className="font-bold text-sm text-bitcoin">{formatBalance(balance.total)} BTC</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-xs opacity-70 flex flex-col items-start">
+            <span>Network:</span>
+            <span className="font-bold text-sm">{network}</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-gray-700" />
           <DropdownMenuItem onClick={copyAddress} className="cursor-pointer hover:bg-dark-200">
-            {copied ? "Copied!" : "Copy Address"}
+            {copied ? "✓ Copied" : "Copy Address"}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={disconnectWallet} className="cursor-pointer hover:bg-dark-200">
             Disconnect
