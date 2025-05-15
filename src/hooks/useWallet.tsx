@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext } from 'react';
 import { toast } from "@/hooks/use-toast";
 import { ChainType } from '@/types/network';
@@ -213,7 +212,16 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     
     try {
       const unisat = (window as any).unisat;
-      if (!unisat || !unisat.switchChain) {
+      if (!unisat) {
+        toast({
+          title: "Wallet not found",
+          description: "Please install the Unisat wallet extension",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!unisat.switchChain) {
         toast({
           title: "Wallet feature not supported",
           description: "Your wallet does not support chain switching",
@@ -222,17 +230,27 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
       
+      console.log("Switching chain to:", newChainType);
+      
       // Request chain switch
       const chain = await unisat.switchChain(newChainType);
+      console.log("Chain switched to:", chain);
+      
+      // Update chain type state
       setChainType(chain.enum);
       
-      // Update network state
+      // Update network state if available
       if (chain.network) {
         setNetwork(chain.network);
       }
       
       // Refresh wallet info
-      getWalletInfo();
+      await getWalletInfo();
+      
+      toast({
+        title: "Network switched",
+        description: `Switched to ${CHAINS_MAP[chain.enum].label}`,
+      });
       
     } catch (error) {
       console.error("Error switching chain:", error);

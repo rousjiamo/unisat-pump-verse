@@ -1,36 +1,28 @@
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Globe } from "lucide-react";
+import { Globe, Network } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChainType, CHAINS_MAP } from "@/types/network";
 import { useWallet } from "@/hooks/useWallet";
 import { toast } from "@/hooks/use-toast";
 
 export const NetworkSelector = () => {
-  const { network, connected } = useWallet();
+  const { network, connected, chainType, switchChain } = useWallet();
   const [selectedNetwork, setSelectedNetwork] = useState<ChainType>(ChainType.BITCOIN_MAINNET);
   
-  // Update selectedNetwork when wallet network changes
+  // Update selectedNetwork when wallet network/chain changes
   useEffect(() => {
-    if (network === 'livenet') {
+    if (chainType) {
+      setSelectedNetwork(chainType);
+    } else if (network === 'livenet') {
       setSelectedNetwork(ChainType.BITCOIN_MAINNET);
     } else if (network === 'testnet') {
       setSelectedNetwork(ChainType.BITCOIN_TESTNET);
     }
-  }, [network]);
+  }, [network, chainType]);
   
-  const switchNetwork = async (chainType: ChainType) => {
-    const unisat = (window as any).unisat;
-    
-    if (!unisat) {
-      toast({
-        title: "Wallet not found",
-        description: "Please install the Unisat wallet extension",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleNetworkChange = async (value: string) => {
+    const chainType = value as ChainType;
     
     if (!connected) {
       toast({
@@ -42,32 +34,19 @@ export const NetworkSelector = () => {
     }
     
     try {
-      const chain = await unisat.switchChain(chainType);
-      setSelectedNetwork(chain.enum);
-      toast({
-        title: "Network switched",
-        description: `Switched to ${CHAINS_MAP[chain.enum].label}`,
-      });
+      await switchChain(chainType);
+      setSelectedNetwork(chainType);
     } catch (e) {
       console.error("Error switching network:", e);
-      toast({
-        title: "Failed to switch network",
-        description: (e as any).message || "Unknown error",
-        variant: "destructive",
-      });
+      // Error is already toasted in the useWallet hook
     }
-  };
-  
-  const handleNetworkChange = (value: string) => {
-    const chainType = value as ChainType;
-    switchNetwork(chainType);
   };
   
   return (
     <Select value={selectedNetwork} onValueChange={handleNetworkChange}>
       <SelectTrigger className="w-[180px] bg-dark-100 border-gray-700 hover:bg-dark-100/80 hover:border-bitcoin text-white">
         <div className="flex items-center gap-2">
-          <Globe size={16} className="text-bitcoin" />
+          <Network size={16} className="text-bitcoin" />
           <SelectValue placeholder="Select Network" />
         </div>
       </SelectTrigger>
