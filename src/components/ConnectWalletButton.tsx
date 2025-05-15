@@ -4,9 +4,10 @@ import { useWallet } from "@/hooks/useWallet";
 import { Wallet } from "lucide-react";
 import { useState } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { CHAINS_MAP } from "@/types/network";
 
 export const ConnectWalletButton = () => {
-  const { connecting, connected, address, publicKey, balance, network, connectWallet, disconnectWallet } = useWallet();
+  const { connecting, connected, address, publicKey, balance, network, chainType, connectWallet, disconnectWallet } = useWallet();
   const [copied, setCopied] = useState(false);
 
   // Format address for display (e.g., 0x1234...5678)
@@ -26,6 +27,10 @@ export const ConnectWalletButton = () => {
     return (satoshis / 100000000).toFixed(8);
   };
 
+  // Get current chain info
+  const currentChain = CHAINS_MAP[chainType] || CHAINS_MAP.BITCOIN_MAINNET;
+  const unit = currentChain ? currentChain.unit : "BTC";
+
   if (connected && address) {
     return (
       <DropdownMenu>
@@ -43,11 +48,11 @@ export const ConnectWalletButton = () => {
           <DropdownMenuSeparator className="bg-gray-700" />
           <DropdownMenuItem className="text-xs opacity-70 flex flex-col items-start">
             <span>Balance:</span>
-            <span className="font-bold text-sm text-bitcoin">{formatBalance(balance.total)} BTC</span>
+            <span className="font-bold text-sm text-bitcoin">{formatBalance(balance.total)} {unit}</span>
           </DropdownMenuItem>
           <DropdownMenuItem className="text-xs opacity-70 flex flex-col items-start">
             <span>Network:</span>
-            <span className="font-bold text-sm">{network}</span>
+            <span className="font-bold text-sm">{currentChain.label}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator className="bg-gray-700" />
           <DropdownMenuItem onClick={copyAddress} className="cursor-pointer hover:bg-dark-200">

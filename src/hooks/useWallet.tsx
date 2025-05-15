@@ -1,6 +1,7 @@
 
 import { useState, useEffect, createContext, useContext } from 'react';
 import { toast } from "@/hooks/use-toast";
+import { ChainType } from '@/types/network';
 
 interface WalletContextType {
   address: string | null;
@@ -13,8 +14,10 @@ interface WalletContextType {
     total: number;
   };
   network: string;
+  chainType: ChainType;
   connectWallet: () => Promise<void>;
   disconnectWallet: () => void;
+  switchChain: (chainType: ChainType) => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextType>({
@@ -28,8 +31,10 @@ const WalletContext = createContext<WalletContextType>({
     total: 0,
   },
   network: 'livenet',
+  chainType: ChainType.BITCOIN_MAINNET,
   connectWallet: async () => {},
   disconnectWallet: () => {},
+  switchChain: async () => {},
 });
 
 export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
@@ -43,6 +48,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     total: 0,
   });
   const [network, setNetwork] = useState('livenet');
+  const [chainType, setChainType] = useState<ChainType>(ChainType.BITCOIN_MAINNET);
 
   // Helper function to get wallet information
   const getWalletInfo = async () => {
@@ -69,6 +75,15 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (e) {
       console.error("getNetwork error", e);
     }
+
+    try {
+      if (unisat.getChain) {
+        const chain = await unisat.getChain();
+        setChainType(chain.enum);
+      }
+    } catch (e) {
+      console.error("getChain error", e);
+    }
   };
 
   // Handle account changes from the wallet
@@ -92,6 +107,13 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
   const handleNetworkChanged = (newNetwork: string) => {
     console.log("network changed", newNetwork);
     setNetwork(newNetwork);
+    getWalletInfo();
+  };
+
+  // Handle chain changes
+  const handleChainChanged = (chain: { enum: ChainType; name: string; network: string }) => {
+    console.log("chain changed", chain);
+    setChainType(chain.enum);
     getWalletInfo();
   };
 
@@ -125,11 +147,17 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
       // Set up event listeners
       unisat.on("accountsChanged", handleAccountsChanged);
       unisat.on("networkChanged", handleNetworkChanged);
+      if (unisat.on && typeof unisat.on === 'function') {
+        unisat.on("chainChanged", handleChainChanged);
+      }
 
       return () => {
         if (unisat) {
           unisat.removeListener("accountsChanged", handleAccountsChanged);
           unisat.removeListener("networkChanged", handleNetworkChanged);
+          if (unisat.removeListener && typeof unisat.removeListener === 'function') {
+            unisat.removeListener("chainChanged", handleChainChanged);
+          }
         }
       };
     }
@@ -179,6 +207,44 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Switch chain
+  const switchChain = async (newChainType: ChainType) => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const unisat = (window as any).unisat;
+      if (!unisat || !unisat.switchChain) {
+        toast({
+          title: "Wallet feature not supported",
+          description: "Your wallet does not support chain switching",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Request chain switch
+      const chain = await unisat.switchChain(newChainType);
+      setChainType(chain.enum);
+      
+      // Update network state
+      if (chain.network) {
+        setNetwork(chain.network);
+      }
+      
+      // Refresh wallet info
+      getWalletInfo();
+      
+    } catch (error) {
+      console.error("Error switching chain:", error);
+      toast({
+        title: "Chain switch failed",
+        description: (error as any).message || "Failed to switch chain",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   // Disconnect wallet
   const disconnectWallet = () => {
     const unisat = (window as any).unisat;
@@ -211,8 +277,10 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
         connected,
         balance,
         network,
+        chainType,
         connectWallet,
         disconnectWallet,
+        switchChain,
       }}
     >
       {children}

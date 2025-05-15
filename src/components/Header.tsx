@@ -1,5 +1,6 @@
 
 import { ConnectWalletButton } from "./ConnectWalletButton";
+import { NetworkSelector } from "./NetworkSelector";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 
@@ -46,8 +47,11 @@ export const Header = () => {
           <a href="#faq" className="text-white/80 hover:text-bitcoin transition-colors">FAQ</a>
         </nav>
         
-        {/* Connect Wallet Button */}
-        <ConnectWalletButton />
+        {/* Network Selector and Connect Wallet Button */}
+        <div className="flex items-center gap-2">
+          <NetworkSelector />
+          <ConnectWalletButton />
+        </div>
       </div>
     </header>
   );
